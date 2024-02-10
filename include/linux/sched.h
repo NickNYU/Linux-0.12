@@ -105,7 +105,7 @@ struct tss_struct {
 struct task_struct {
 /* these are hardcoded - don't touch */
 	long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-	long counter;
+	long counter; // 本次进程暂定前
 	long priority;
 	long signal;
 	struct sigaction sigaction[32];
