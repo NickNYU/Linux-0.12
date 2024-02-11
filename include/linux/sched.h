@@ -75,10 +75,17 @@ struct i387_struct {
 	long	st_space[20];	/* 8*10 bytes for each FP-reg = 80 bytes */
 };
 
+/**
+ * 上下文切换保存context的结构，放在task（线程结构）的尾端
+ */
 struct tss_struct {
 	long	back_link;	/* 16 high bits zero */
+    /**
+     * esp0 + ss0 是进程（task）的内核态栈
+     */
 	long	esp0;
 	long	ss0;		/* 16 high bits zero */
+    
 	long	esp1;
 	long	ss1;		/* 16 high bits zero */
 	long	esp2;
@@ -105,7 +112,7 @@ struct tss_struct {
 struct task_struct {
 /* these are hardcoded - don't touch */
 	long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
-	long counter; // 本次进程暂定前
+	long counter; // 本次进程暂停前，还有多少CPU时间片（jiffy -- 10ms为一个周期），初始状态是priority的值，默认值15
 	long priority;
 	long signal;
 	struct sigaction sigaction[32];
@@ -124,6 +131,13 @@ struct task_struct {
 	unsigned short uid,euid,suid;
 	unsigned short gid,egid,sgid;
 	unsigned long timeout,alarm;
+    /**
+     * timer_interrupt(10ms 一次） -> do_timer() 会检查当前进程的CPL: CPL = 0 => stime += 1; CPL = 1 => utime += 1
+     * utime: 用户态CPU时间片
+     * stime: 内核（系统）态CPU时间片
+     * cutime: 子进程(child) utime
+     * cstime: 子进程(child) stime
+     */
 	long utime,stime,cutime,cstime,start_time;
 	struct rlimit rlim[RLIM_NLIMITS]; 
 	unsigned int flags;	/* per process flags, defined below */
@@ -131,6 +145,10 @@ struct task_struct {
 /* file system info */
 	int tty;		/* -1 if no tty, so it must be signed */
 	unsigned short umask;
+    /**
+     * pwd：pwd 命令，可以用chdir 修改
+     * root：进程根目录，chroot 修改的就是这里
+     */
 	struct m_inode * pwd;
 	struct m_inode * root;
 	struct m_inode * executable;
@@ -140,6 +158,9 @@ struct task_struct {
 /* ldt for this task 0 - zero 1 - cs 2 - ds&ss */
 	struct desc_struct ldt[3];
 /* tss for this task */
+/**
+ * tss 就是Linux中常说的上下文切换(context switch）中的context，用于保存需要的寄存器信息
+ */
 	struct tss_struct tss;
 };
 
