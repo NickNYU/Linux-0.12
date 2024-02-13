@@ -85,7 +85,7 @@ struct tss_struct {
      */
 	long	esp0;
 	long	ss0;		/* 16 high bits zero */
-    
+
 	long	esp1;
 	long	ss1;		/* 16 high bits zero */
 	long	esp2;

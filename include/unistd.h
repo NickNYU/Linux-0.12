@@ -57,7 +57,6 @@
 #include <sys/resource.h>
 #include <utime.h>
 
-#ifdef __LIBRARY__
 
 #define __NR_setup	0	/* used only by init, to get system going */
 #define __NR_exit	1
@@ -146,7 +145,17 @@
 #define __NR_lstat	84
 #define __NR_readlink	85
 #define __NR_uselib	86
-
+/**
+ * SYS CALL 最多接收3个入参，从0 param 到 3 param总共有 4 个不同的sys call调用
+ * 原因是因为总共有4个寄存器用于系统调用的实现，其中，eax存的是返回值，所以，其余最多3个寄存器可供使用
+ * __asm__ volatile ("int $0x80"   -->  调用系统中断0x80
+ * : "=a" (__res) \                -->  返回值 eax(_res)
+ * : "0" (__NR_##name)); \         -->  调用系统中断Index 为 __NR_name （参考上文中所有的 __NR_xx)
+ * if (__res >= 0) \               -->  如果返回值 >= 0，则直接返回（正确结果）
+ *     return (type) __res; \
+ * errno = -__res; \               -->  反之，则返回-1，并且设置errno
+ * return -1; \
+ */
 #define _syscall0(type,name) \
 type name(void) \
 { \
@@ -157,7 +166,7 @@ __asm__ volatile ("int $0x80" \
 if (__res >= 0) \
 	return (type) __res; \
 errno = -__res; \
-return -1; \
+return -1; \‘
 }
 
 #define _syscall1(type,name,atype,a) \
@@ -198,8 +207,6 @@ if (__res>=0) \
 errno=-__res; \
 return -1; \
 }
-
-#endif /* __LIBRARY__ */
 
 extern int errno;
 
