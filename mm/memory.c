@@ -137,6 +137,10 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 		from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
 		if (!(to_page_table = (unsigned long *) get_free_page()))
 			return -1;	/* Out of memory, see freeing */
+        /**
+         * 7 : 111， 代表了 用户进程/读写权限/存在（u/s, r/w, present)
+         * 如果from是0的话，代表此时正在内核初始化的过程中（将0号进程复制出1号进程，不需要那么多的内存空间）
+         */
 		*to_dir = ((unsigned long) to_page_table) | 7;
 		nr = (from==0)?0xA0:1024;
 		for ( ; nr-- > 0 ; from_page_table++,to_page_table++) {
@@ -161,6 +165,11 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 			}
 		}
 	}
+    /**
+     * #define invalidate() \
+__asm__("movl %%eax,%%cr3"::"a" (0))
+     将CR3刷新为0，CR3是页表缓存
+     */
 	invalidate();
 	return 0;
 }

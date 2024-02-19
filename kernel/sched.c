@@ -23,6 +23,11 @@
 #define _S(nr) (1<<((nr)-1))
 #define _BLOCKABLE (~(_S(SIGKILL) | _S(SIGSTOP)))
 
+/**
+ * 内核调试函数，用于debug进程NR的info
+ * @param nr
+ * @param p
+ */
 void show_task(int nr,struct task_struct * p)
 {
 	int i,j = 4096-sizeof(struct task_struct);
@@ -55,8 +60,13 @@ void show_state(void)
 #define LATCH (1193180/HZ)
 
 extern void mem_use(void);
-
+/**
+ * 时钟中断程序，kernel/sys_call.s 189
+ * */
 extern int timer_interrupt(void);
+/**
+ * 系统调用的中断程序，kernel/sys_call.s 84
+ * */
 extern int system_call(void);
 
 union task_union {

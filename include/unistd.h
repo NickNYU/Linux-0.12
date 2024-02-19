@@ -147,7 +147,7 @@
 #define __NR_uselib	86
 /**
  * SYS CALL 最多接收3个入参，从0 param 到 3 param总共有 4 个不同的sys call调用
- * 原因是因为总共有4个寄存器用于系统调用的实现，其中，eax存的是返回值，所以，其余最多3个寄存器可供使用
+ * 原因是因为总共有4个寄存器用于系统调用的实现，其中，eax存的是调用号，所以，其余最多3个寄存器可供使用
  * __asm__ volatile ("int $0x80"   -->  调用系统中断0x80
  * : "=a" (__res) \                -->  返回值 eax(_res)
  * : "0" (__NR_##name)); \         -->  调用系统中断Index 为 __NR_name （参考上文中所有的 __NR_xx)
@@ -166,7 +166,7 @@ __asm__ volatile ("int $0x80" \
 if (__res >= 0) \
 	return (type) __res; \
 errno = -__res; \
-return -1; \‘
+return -1; \
 }
 
 #define _syscall1(type,name,atype,a) \

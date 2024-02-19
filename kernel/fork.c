@@ -40,15 +40,25 @@ int copy_mem(int nr,struct task_struct * p)
 {
 	unsigned long old_data_base,new_data_base,data_limit;
 	unsigned long old_code_base,new_code_base,code_limit;
-
+    /**
+     * 取子进程的 code、data 长度limit
+     * 0x0f:  1111 -> code段、LDT、特权级3
+     * 0x17: 10111 -> data段、LDT、特权级3
+     */
 	code_limit=get_limit(0x0f);
 	data_limit=get_limit(0x17);
+    // 获取父进程的 code 和 data 的base
 	old_code_base = get_base(current->ldt[1]);
 	old_data_base = get_base(current->ldt[2]);
 	if (old_data_base != old_code_base)
 		panic("We don't support separate I&D");
 	if (data_limit < code_limit)
 		panic("Bad data_limit");
+    /**
+     * TASK_SIZE = 64MB，在Linux0.11、0.12版本中，每一个进程的空间为64MB
+     * 这一版本的Linux最多支持64个进程，也就是64*64MB = 4GB（正好是X86 32位CPU可以寻址的上限）
+     * 使用 set_base 这个宏，将code、data的base，加上特权级以及段信息等，形成一个段描述符（segment describe）
+     */
 	new_data_base = new_code_base = nr * TASK_SIZE;
 	p->start_code = new_code_base;
 	set_base(p->ldt[1],new_code_base);
