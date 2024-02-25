@@ -35,6 +35,7 @@
 #include <linux/sched.h>
 #include <linux/head.h>
 #include <linux/kernel.h>
+#include "../include/linux/mm.h"
 
 #define CODE_SPACE(addr) ((((addr)+4095)&~4095) < \
 current->start_code + current->end_code)
@@ -126,8 +127,19 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 
 	if ((from&0x3fffff) || (to&0x3fffff))
 		panic("copy_page_tables called with wrong alignment");
+    /** 一个页目录项的管理范围是4 MB，一项是4字节，项的地址就是项数×4，也就是项管理的线性地址起始地址的M数，
+     * 比如：0项的地址是0，管理范围是0～4 MB，
+     * 1项的地址是4，管理范围是4～8 MB，
+     * 2项的地址是8，管理范围是8～12MB……
+     * >>20就是地址的MB数，
+     * &0xffc就是&111111111100b，就是4 MB以下部分清零的地址的MB数，
+     * 也就是页目录项的地址*/
 	from_dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
 	to_dir = (unsigned long *) ((to>>20) & 0xffc);
+    /**
+     * 0x3fffff是4 MB，是一个页表的管辖范围，二进制是22个1，||的两边必须同为0，所以，from和to后22位必须都为0，即4 MB的整数倍，
+     * 意思是一个页表对应4 MB连续的线性地址空间必须是从0x000000开始的4 MB的整数倍的线性地址，不能是任意地址开始的4 MB，才符合分页的要求
+     * */
 	size = ((unsigned) (size+0x3fffff)) >> 22;
 	for( ; size-->0 ; from_dir++,to_dir++) {
 		if (1 & *to_dir)
@@ -140,6 +152,7 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
         /**
          * 7 : 111， 代表了 用户进程/读写权限/存在（u/s, r/w, present)
          * 如果from是0的话，代表此时正在内核初始化的过程中（将0号进程复制出1号进程，不需要那么多的内存空间）
+         * read_swap_page(this_page>>1, (char *) new_page); 负责将交换空间（swap区）的内容读取到对应的page上
          */
 		*to_dir = ((unsigned long) to_page_table) | 7;
 		nr = (from==0)?0xA0:1024;
@@ -147,6 +160,7 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 			this_page = *from_page_table;
 			if (!this_page)
 				continue;
+            // 这里就是标识 present == 0（不存在），即需要调用swap
 			if (!(1 & this_page)) {
 				if (!(new_page = get_free_page()))
 					return -1;
@@ -155,6 +169,11 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 				*from_page_table = new_page | (PAGE_DIRTY | 7);
 				continue;
 			}
+            /**
+             * 重置页属性，2 是 010， ~2 是 101
+             * 代表了 用户、只读、存在（这里设置原页面为只读，不管父子进程，哪个发生在发生写操作时，就会触发page_fault，进行CoW的进程）
+             * ，Redis RDB 的原理
+             */
 			this_page &= ~2;
 			*to_page_table = this_page;
 			if (this_page > LOW_MEM) {

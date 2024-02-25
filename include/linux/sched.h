@@ -237,11 +237,26 @@ __asm__("str %%ax\n\t" \
 	"shrl $4,%%eax" \
 	:"=a" (n) \
 	:"a" (0),"i" (FIRST_TSS_ENTRY<<3))
-/*
+/**
  *	switch_to(n) should switch tasks to task nr n, first
  * checking that n isn't the current task, in which case it does nothing.
  * This also clears the TS-flag if the task we switched to has used
  * tha math co-processor latest.
+ * switch_to(n) {
+    struct {long a,b;} __tmp;               // 存储ljump中，对应 CS, EIP
+    __asm__("cmpl %%ecx,_current\n\t"
+	        "je 1f\n\t"                     // 将ecx 与 current对比，如果是当前线程，则直接退出
+	        "movw %%dx,%1\n\t"              // 将edx 低位（CS）赋值给 tmp.b
+	        "xchgl %%ecx,_current\n\t"      // 使用CAS 将 ecx 赋值给 current，重置current线程
+	        "ljmp %0\n\t"                   // ljmp 到 tmp，
+	        "cmpl %%ecx,_last_task_used_math\n\t"
+	        "jne 1f\n\t"
+	        "clts\n"                        // 清空CR0中的切换任务标记
+	        "1:"
+	        ::"m" (*&__tmp.a),"m" (*&__tmp.b),
+	        "d" (_TSS(n)),"c" ((long) task[n]) // 定义 edx 是 TSS n的索引号，ecx 为 task[n]
+    );
+}
  */
 #define switch_to(n) {\
 struct {long a,b;} __tmp; \

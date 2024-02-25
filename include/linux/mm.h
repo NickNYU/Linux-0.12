@@ -30,7 +30,7 @@ __asm__("movl %%eax,%%cr3"::"a" (0))
 #define LOW_MEM 0x100000
 extern unsigned long HIGH_MEMORY;
 #define PAGING_MEMORY (15*1024*1024)
-#define PAGING_PAGES (PAGING_MEMORY>>12)
+#define PAGING_PAGES (PAGING_MEMORY>>12) //3.75
 #define MAP_NR(addr) (((addr)-LOW_MEM)>>12)
 #define USED 100
 

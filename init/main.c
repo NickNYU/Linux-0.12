@@ -20,10 +20,10 @@
  * won't be any messing with the stack from main(), but we define
  * some others too.
  */
-static inline _syscall0(int,fork)
-static inline _syscall0(int,pause)
-static inline _syscall1(int,setup,void *,BIOS)
-static inline _syscall0(int,sync)
+static inline _syscall0(int,fork);
+static inline _syscall0(int,pause);
+static inline _syscall1(int,setup,void *,BIOS);
+static inline _syscall0(int,sync);
 
 #include <linux/tty.h>
 #include <linux/sched.h>
@@ -40,6 +40,11 @@ static inline _syscall0(int,sync)
 #include <linux/fs.h>
 
 #include <string.h>
+#include "../include/linux/sched.h"
+#include "../include/linux/tty.h"
+#include "../include/linux/fs.h"
+#include "../include/asm/system.h"
+#include "../include/linux/mm.h"
 
 static char printbuf[1024];
 
@@ -150,18 +155,33 @@ void main(void)		/* This really IS void, no error here. */
 #ifdef RAMDISK
 	main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
 #endif
+    // mem_init 主要是初始化 mem_map 这样一个全局变量，目前已知mem_map是一个管理物理内存的结构，猜测可能是VMA的前身
 	mem_init(main_memory_start,memory_end);
 	trap_init();
 	blk_dev_init();
 	chr_dev_init();
 	tty_init();
 	time_init();
+    /**
+     * 1. 设置进程-1（init_task）的tss、ldt
+     * 2. 初始化其他63个进程的GDT空间为NULL
+     * 3. Enable 用于系统调用/CPU时间片管理的中断：set_intr_gate(0x20,&timer_interrupt);
+	                                        outb(inb_p(0x21)&~0x01,0x21);
+	                                        set_system_gate(0x80,&system_call);
+     */
 	sched_init();
 	buffer_init(buffer_memory_end);
 	hd_init();
 	floppy_init();
 	sti();
+    /**
+     * 把CPL（current privilege level）从 0 切换到 3
+     */
 	move_to_user_mode();
+    /**
+     * 然后，以特权级3来运行1号进程（fork出来的）
+     * 0 号进程持续地 pause（）
+     */
 	if (!fork()) {		/* we count on this going ok */
 		init();
 	}
