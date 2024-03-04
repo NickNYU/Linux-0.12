@@ -84,6 +84,8 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	int i;
 	struct file *f;
 
+	/**
+	 * get_free_page其实申请的是一个 task_union 结构，正好是一个页大小（4KB)**/
 	p = (struct task_struct *) get_free_page();
 	if (!p)
 		return -EAGAIN;
@@ -98,12 +100,16 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	p->utime = p->stime = 0;
 	p->cutime = p->cstime = 0;
 	p->start_time = jiffies;
+	
+	/**
+	tss 参考下文中的描述，利用了CPU的规则，用于保留进程的上下文
+	*/
 	p->tss.back_link = 0;
-	p->tss.esp0 = PAGE_SIZE + (long) p;
-	p->tss.ss0 = 0x10;
+	p->tss.esp0 = PAGE_SIZE + (long) p; // !!!!!esp0 是进程的内核stack基址（stack从高地址向低地址生长），因为task_union申请了一个PAGE_SIZE(4KB)，所以，内核stack的基址就是这个task_union的页面最高位，也就是 p(开始的地址）+ PAGE_SIZE!!!!!!!!!!
+	p->tss.ss0 = 0x10; // 0x10 == 10000, DPL = 0, GDT, 数据段
 	p->tss.eip = eip;
 	p->tss.eflags = eflags;
-	p->tss.eax = 0;
+	p->tss.eax = 0; // !!!!!!!这里的这个操作，就是保障fork()在子进程中，返回0 的原理!!!!!!!!
 	p->tss.ecx = ecx;
 	p->tss.edx = edx;
 	p->tss.ebx = ebx;
@@ -119,6 +125,8 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	p->tss.gs = gs & 0xffff;
 	p->tss.ldt = _LDT(nr);
 	p->tss.trace_bitmap = 0x80000000;
+	/** End of TSS*/
+
 	if (last_task_used_math == current)
 		__asm__("clts ; fnsave %0 ; frstor %0"::"m" (p->tss.i387));
 	if (copy_mem(nr,p)) {
@@ -137,6 +145,15 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 		current->executable->i_count++;
 	if (current->library)
 		current->library->i_count++;
+	/** 设置TSS是线程切换的关键，Linux复用了CPU提供的上下文切换的机制 
+	1. 定义了struct TSS，符合CPU关于TSS定义的内存位置
+	2. 这里关联struct的TSS内存区域到GDT中（生成TSS内存区域对应的段描述符，添加到GDT中）
+	3. 线程切换时候，在CPL=0（线程切换仅由CPU的时钟中断，执行do_timer时候调用 schedule 函数），这时线程是用户线程，但是因为是时钟中断引起的操作，所以是在CPL=0的内核态。
+	这个时候，使用LJMP跳转到其他线程，是可以的（CPL == 0, DPL == 3, RPL == 0）
+	在LJMP执行过程中，
+	1. CPU会将所有上下文相关的寄存器内存，储存到TR寄存器，然后，赋值给TSS段描述符对应的内存区域，完成对原有进程上下文的保存
+	2. 同时，加载段选择子对应的段描述符（新进程的TSS），解析出TSS中的LDT、堆栈寄存器等，跳转到新的进程对应的代码(CS:IP)处，继续执行代码逻辑
+	*/
 	set_tss_desc(gdt+(nr<<1)+FIRST_TSS_ENTRY,&(p->tss));
 	set_ldt_desc(gdt+(nr<<1)+FIRST_LDT_ENTRY,&(p->ldt));
 	p->p_pptr = current;
