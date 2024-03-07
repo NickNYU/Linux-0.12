@@ -10,13 +10,21 @@
  * call functions (type getpid(), which just extracts a field from
  * current-task
  */
-#include <linux/sched.h>
-#include <linux/kernel.h>
-#include <linux/sys.h>
-#include <linux/fdreg.h>
-#include <asm/system.h>
-#include <asm/io.h>
-#include <asm/segment.h>
+//#include <linux/sched.h>
+//#include <linux/kernel.h>
+//#include <linux/sys.h>
+//#include <linux/fdreg.h>
+//#include <asm/system.h>
+//#include <asm/io.h>
+//#include <asm/segment.h>
+
+#include "../include/linux/sched.h"
+#include "../include/linux/kernel.h"
+#include "../include/linux/sys.h"
+#include "../include/linux/fdreg.h"
+#include "../include/asm/system.h"
+#include "../include/asm/io.h"
+#include "../include/asm/segment.h"
 
 #include <signal.h>
 

@@ -31,9 +31,12 @@
 #define FIRST_TASK task[0]
 #define LAST_TASK task[NR_TASKS-1]
 
-#include <linux/head.h>
-#include <linux/fs.h>
-#include <linux/mm.h>
+//#include <linux/head.h>
+//#include <linux/fs.h>
+//#include <linux/mm.h>
+#include "head.h"
+#include "fs.h"
+#include "mm.h"
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -247,14 +250,14 @@ __asm__("str %%ax\n\t" \
     __asm__("cmpl %%ecx,_current\n\t"
 	        "je 1f\n\t"                     // 将ecx 与 current对比，如果是当前线程，则直接退出
 	        "movw %%dx,%1\n\t"              // 将edx 低位（CS）赋值给 tmp.b
-	        "xchgl %%ecx,_current\n\t"      // 使用CAS 将 ecx 赋值给 current，重置current线程
-	        "ljmp %0\n\t"                   // ljmp 到 tmp，
+	        "xchgl %%ecx,_current\n\t"      // 使用CAS 将 ecx（task-n 的地址） 赋值给 current，重置current 对应的struct task
+	        "ljmp %0\n\t"                   // ljmp 到 tmp，此时的tmp存储了任务-n的tss信息
 	        "cmpl %%ecx,_last_task_used_math\n\t"
 	        "jne 1f\n\t"
 	        "clts\n"                        // 清空CR0中的切换任务标记
-	        "1:"
+	        "1:"                            // 结束的地方 （je 1f / jne 1f)
 	        ::"m" (*&__tmp.a),"m" (*&__tmp.b),
-	        "d" (_TSS(n)),"c" ((long) task[n]) // 定义 edx 是 TSS n的索引号，ecx 为 task[n]
+	        "d" (_TSS(n)),"c" ((long) task[n]) // 定义 edx 是 task-n 的 TSS 描述符，ecx 为 task[n] 的地址
     );
 }
  */
