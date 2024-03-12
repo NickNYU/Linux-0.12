@@ -10,11 +10,15 @@
  */
 
 #include <string.h>
-
-#include <linux/mm.h>
-#include <linux/sched.h>
-#include <linux/head.h>
-#include <linux/kernel.h>
+//
+//#include <linux/mm.h>
+//#include <linux/sched.h>
+//#include <linux/head.h>
+//#include <linux/kernel.h>
+#include "../include/linux/mm.h"
+#include "../include/linux/sched.h"
+#include "../include/linux/head.h"
+#include "../include/linux/kernel.h"
 
 #define SWAP_BITS (4096<<3)
 
@@ -168,6 +172,26 @@ int swap_out(void)
 /*
  * Get physical address of first (actually last :-) free page, and mark it
  * used. If no free pages left, return 0.
+ */
+/***
+    __asm__("std;repne;scasb\n\t"            //反向扫描串（mem map[]），al（0）与di不等则重复（找引用对数为0的项）
+                  "jne 1f\n\t"                    //找不到空闲页，跳转到1
+                  "movb $1,1(%%edi)\n\t"          //将1赋给edi + 1的位置，在mem map[]中，
+                                                  //将找到0的项的引用计数置为1
+                  "sall $12,%%ecx\n\t"            // ecx算数左移12位，页的相对地址
+                  "addl %2,%%ecx\n\t"             // LOW MEN + ecx，页的物理地址
+                  "movl %%ecx,%%edx\n\t"
+                  "movl $1024,%%ecx\n\t"
+                  "leal 4092(%%edx),%%edi\n\t"    //将edx + 4 KB的有效地址赋给edi
+                  "rep;stosl\n\t"                 //将eax（即"0"(0)）赋给edi指向的地址，目的是页面清零
+                  "movl %%edx,%%eax\n"
+                  "1:"
+                  :"=a" (__res)
+                  :"0" (0),"i" (LOW_MEM),"c" (PAGING_PAGES),
+                  "D" (mem_map + PAGING_PAGES-1)  //edx，mem map[]的最后一个元素
+                  :"di","cx","dx");                //第三个冒号后是程序中改变过的量
+        return __res;
+        }
  */
 unsigned long get_free_page(void)
 {

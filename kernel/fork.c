@@ -12,10 +12,15 @@
  */
 #include <errno.h>
 
-#include <linux/sched.h>
-#include <linux/kernel.h>
-#include <asm/segment.h>
-#include <asm/system.h>
+//#include <linux/sched.h>
+//#include <linux/kernel.h>
+//#include <asm/segment.h>
+//#include <asm/system.h>
+
+#include "../include/linux/sched.h"
+#include "../include/linux/kernel.h"
+#include "../include/asm/system.h"
+#include "../include/asm/segment.h"
 
 extern void write_verify(unsigned long address);
 
@@ -75,6 +80,16 @@ int copy_mem(int nr,struct task_struct * p)
  * information (task[nr]) and sets up the necessary registers. It
  * also copies the data segment in it's entirety.
  */
+/***
+ * 入参按照倒序查看，分三批压入：
+ * 1. ss、esp、eflags、cs、eip：INT0X80 是系统调用（sys call中断）中断使CPU硬件自动将SS、ESP、EFLAGS、CS、EIP这5个寄存器的数值按照这个顺序压入进程内核栈
+ * 2. ds、es、fs、eax、edx、ecx、ebx：是系统调用的汇编函数(_system_call)在调用_sys_fork系统调用前，压入堆栈的
+ * 3. none（这个比较特殊）、gs、esi、edi、ebp、nr：是_sys_fork函数，在调用本函数（copy_process）之前，压入堆栈的
+ *
+ * 其中，
+ * 3.1 注意：call _sys_call_table（,%eax,4）指令本身也会压栈保护现场，这个压栈体现在后面copy_process函数的第6个参数long none。
+ * 3.2 nr其实是eax的内容，从find_empty_process返回的 （C语言调用堆栈的定义），返回的是可用的task number - n
+ */
 int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 		long ebx,long ecx,long edx, long orig_eax, 
 		long fs,long es,long ds,
@@ -103,6 +118,7 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	
 	/**
 	tss 参考下文中的描述，利用了CPU的规则，用于保留进程的上下文
+	 根据入参的注释可知，这个时候的寄存器值，都是由当前线程的寄存器保存所得
 	*/
 	p->tss.back_link = 0;
 	p->tss.esp0 = PAGE_SIZE + (long) p; // !!!!!esp0 是进程的内核stack基址（stack从高地址向低地址生长），因为task_union申请了一个PAGE_SIZE(4KB)，所以，内核stack的基址就是这个task_union的页面最高位，也就是 p(开始的地址）+ PAGE_SIZE!!!!!!!!!!

@@ -30,12 +30,17 @@
 
 #include <signal.h>
 
-#include <asm/system.h>
+//#include <asm/system.h>
 
-#include <linux/sched.h>
-#include <linux/head.h>
-#include <linux/kernel.h>
+//#include <linux/sched.h>
+//#include <linux/head.h>
+//#include <linux/kernel.h>
 #include "../include/linux/mm.h"
+#include "../include/linux/sched.h"
+#include "../include/linux/head.h"
+#include "../include/linux/kernel.h"
+
+#include "../include/asm/system.h"
 
 #define CODE_SPACE(addr) ((((addr)+4095)&~4095) < \
 current->start_code + current->end_code)
@@ -69,31 +74,33 @@ void free_page(unsigned long addr)
  */
 int free_page_tables(unsigned long from,unsigned long size)
 {
-	unsigned long *pg_table;
-	unsigned long * dir, nr;
+	unsigned long *from_page_table;
+	unsigned long * from_dir, nr;
 
 	if (from & 0x3fffff)
 		panic("free_page_tables called with wrong alignment");
 	if (!from)
 		panic("Trying to free up swapper memory space");
-	size = (size + 0x3fffff) >> 22;
-	dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
-	for ( ; size-->0 ; dir++) {
-		if (!(1 & *dir))
+	size = (size + 0x3fffff) >> 22;                 /** >> 22是4 MB数 */
+    from_dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
+
+	for ( ; size-->0 ; from_dir++) {
+		if (!(1 & *from_dir))
 			continue;
-		pg_table = (unsigned long *) (0xfffff000 & *dir);
+        /**from_dir是页目录项中的地址，0xfffff000&是将低12位清零，高20位是页表的地址*/
+        from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
 		for (nr=0 ; nr<1024 ; nr++) {
-			if (*pg_table) {
-				if (1 & *pg_table)
-					free_page(0xfffff000 & *pg_table);
+			if (*from_page_table) {
+				if (1 & *from_page_table)
+					free_page(0xfffff000 & *from_page_table);
 				else
-					swap_free(*pg_table >> 1);
-				*pg_table = 0;
+					swap_free(*from_page_table >> 1);
+				*from_page_table = 0;
 			}
-			pg_table++;
+            from_page_table++;
 		}
-		free_page(0xfffff000 & *dir);
-		*dir = 0;
+		free_page(0xfffff000 & *from_dir);
+		*from_dir = 0;
 	}
 	invalidate();
 	return 0;
@@ -127,29 +134,46 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 
 	if ((from&0x3fffff) || (to&0x3fffff))
 		panic("copy_page_tables called with wrong alignment");
-    /** 一个页目录项的管理范围是4 MB，一项是4字节，项的地址就是项数×4，也就是项管理的线性地址起始地址的M数，
+    /** 一个页目录项的管理范围是4 MB，一项是4字节，目录项的地址就是项数×4 (对应下文中的 &0xffc)
      * 比如：0项的地址是0，管理范围是0～4 MB，
      * 1项的地址是4，管理范围是4～8 MB，
      * 2项的地址是8，管理范围是8～12MB……
-     * >>20就是地址的MB数，
-     * &0xffc就是&111111111100b，就是4 MB以下部分清零的地址的MB数，
-     * 也就是页目录项的地址*/
+     * (from>>20) & 0xffc) == 相当于 (from >>20) * 4, 页目录项的地址
+     * 1. >>20就是地址的MB数，（10，10，12，所以，>>20就是取前12位）
+     * 2. 0xffc就是&111111111100，就是4 MB以下部分清零的地址的MB数，也就是页目录项的地址*/
 	from_dir = (unsigned long *) ((from>>20) & 0xffc); /* _pg_dir = 0 */
 	to_dir = (unsigned long *) ((to>>20) & 0xffc);
     /**
-     * 0x3fffff是4 MB，是一个页表的管辖范围，二进制是22个1，||的两边必须同为0，所以，from和to后22位必须都为0，即4 MB的整数倍，
-     * 意思是一个页表对应4 MB连续的线性地址空间必须是从0x000000开始的4 MB的整数倍的线性地址，不能是任意地址开始的4 MB，才符合分页的要求
+     * size 是原有传进来的to地址的段limit，这里的意思是limit的长度，向上取整（按照页目录数目取整）
+     * 0x3fffff 是低23位都是1，也就是，如果size直接 size>>22, 会丢失掉不满一个页目录，所以，要加上一个页目录的大小
+     * 核心的逻辑如下：
+     * for( ; size-->0 ; from_dir++,to_dir++) {
+     *      from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
+		    if (!(to_page_table = (unsigned long *) get_free_page()))
+			    return -1;
+			// 这句是赋值page directory
+			*to_dir = ((unsigned long) to_page_table) | 7;
+     *      nr = (from==0)?0xA0:1024;
+		    for ( ; nr-- > 0 ; from_page_table++,to_page_table++) {
+		        this_page = *from_page_table;
+		        this_page &= ~2;
+			    *to_page_table = this_page;
+			}
+     * }
      * */
 	size = ((unsigned) (size+0x3fffff)) >> 22;
 	for( ; size-->0 ; from_dir++,to_dir++) {
+        // 最后一位是Present位，如果存在就有问题
 		if (1 & *to_dir)
 			panic("copy_page_tables: already exist");
 		if (!(1 & *from_dir))
 			continue;
+        // 这里取出的是 高20位（0xfffff000）
 		from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
 		if (!(to_page_table = (unsigned long *) get_free_page()))
 			return -1;	/* Out of memory, see freeing */
         /**
+         * 复制 page directory
          * 7 : 111， 代表了 用户进程/读写权限/存在（u/s, r/w, present)
          * 如果from是0的话，代表此时正在内核初始化的过程中（将0号进程复制出1号进程，不需要那么多的内存空间）
          * read_swap_page(this_page>>1, (char *) new_page); 负责将交换空间（swap区）的内容读取到对应的page上
