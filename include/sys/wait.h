@@ -1,7 +1,8 @@
 #ifndef _SYS_WAIT_H
 #define _SYS_WAIT_H
 
-#include <sys/types.h>
+//#include <sys/types.h>
+#include "types.h"
 
 #define _LOW(v)		( (v) & 0377)
 #define _HIGH(v)	( ((v) >> 8) & 0377)

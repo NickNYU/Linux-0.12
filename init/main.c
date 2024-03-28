@@ -5,8 +5,10 @@
  */
 
 #define __LIBRARY__
-#include <unistd.h>
-#include <time.h>
+//#include <unistd.h>
+//#include <time.h>
+#include "../include/unistd.h"
+#include "../include/time.h"
 
 /*
  * we need this inline - forking from kernel space will result
@@ -25,26 +27,32 @@ static inline _syscall0(int,pause);
 static inline _syscall1(int,setup,void *,BIOS);
 static inline _syscall0(int,sync);
 
-#include <linux/tty.h>
-#include <linux/sched.h>
-#include <linux/head.h>
-#include <asm/system.h>
-#include <asm/io.h>
-
-#include <stddef.h>
-#include <stdarg.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-
-#include <linux/fs.h>
-
-#include <string.h>
-#include "../include/linux/sched.h"
+//#include <linux/tty.h>
+//#include <linux/sched.h>
+//#include <linux/head.h>
+//#include <asm/system.h>
+//#include <asm/io.h>
 #include "../include/linux/tty.h"
-#include "../include/linux/fs.h"
+#include "../include/linux/sched.h"
+#include "../include/linux/head.h"
 #include "../include/asm/system.h"
-#include "../include/linux/mm.h"
+#include "../include/asm/io.h"
+
+//#include <stddef.h>
+//#include <stdarg.h>
+//#include <unistd.h>
+//#include <fcntl.h>
+//#include <sys/types.h>
+//#include <linux/fs.h>
+//#include <string.h>
+
+#include "../include/linux/fs.h"
+#include "../include/stddef.h"
+#include "../include/stdarg.h"
+#include "../include/unistd.h"
+#include "../include/fcntl.h"
+#include "../include/sys/types.h"
+#include "../include/string.h"
 
 static char printbuf[1024];
 
@@ -196,7 +204,7 @@ void main(void)		/* This really IS void, no error here. */
 		__asm__("int $0x80"::"a" (__NR_pause):"ax");
 }
 
-static int printf(const char *fmt, ...)
+int printf(const char *fmt, ...)
 {
 	va_list args;
 	int i;

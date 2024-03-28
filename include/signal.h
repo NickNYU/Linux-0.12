@@ -1,7 +1,8 @@
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
 
-#include <sys/types.h>
+//#include <sys/types.h>
+#include "./sys/types.h"
 
 typedef int sig_atomic_t;
 typedef unsigned int sigset_t;		/* 32 bits */

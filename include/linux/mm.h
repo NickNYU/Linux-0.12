@@ -3,8 +3,10 @@
 
 #define PAGE_SIZE 4096
 
-#include <linux/kernel.h>
-#include <signal.h>
+//#include <linux/kernel.h>
+//#include <signal.h>
+#include "../include/linux/kernel.h"
+#include "../include/signal.h"
 
 extern int SWAP_DEV;
 

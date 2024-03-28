@@ -15,7 +15,8 @@
 
 extern int NR_CONSOLES;
 
-#include <termios.h>
+//#include <termios.h>
+#include "../termios.h"
 
 #define TTY_BUF_SIZE 1024
 

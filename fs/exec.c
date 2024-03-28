@@ -17,17 +17,26 @@
  * was less than 2 hours work to get demand-loading completely implemented.
  */
 
-#include <signal.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <a.out.h>
-
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <asm/segment.h>
+//#include <signal.h>
+//#include <errno.h>
+//#include <string.h>
+//#include <sys/stat.h>
+//#include <a.out.h>
+#include "../include/signal.h"
+#include "../include/errno.h"
+#include "../include/string.h"
+#include "../include/sys/stat.h"
+#include "../include/a.out.h"
+//#include <linux/fs.h>
+//#include <linux/sched.h>
+//#include <linux/kernel.h>
+//#include <linux/mm.h>
+//#include <asm/segment.h>
+#include "../include/linux/fs.h"
+#include "../include/linux/sched.h"
+#include "../include/linux/kernel.h"
+#include "../include/linux/mm.h"
+#include "../include/asm/segment.h"
 
 extern int sys_exit(int exit_code);
 extern int sys_close(int fd);

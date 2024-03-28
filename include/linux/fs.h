@@ -6,7 +6,8 @@
 #ifndef _FS_H
 #define _FS_H
 
-#include <sys/types.h>
+//#include <sys/types.h>
+#include "../include/sys/types.h"
 
 /* devices are as follows: (same as minix, so we can use the minix
  * file system. These are major numbers.)

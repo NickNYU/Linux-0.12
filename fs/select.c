@@ -5,21 +5,36 @@
  * patches by Peter MacDonald. Heavily edited by Linus.
  */
 
-#include <linux/fs.h>
-#include <linux/kernel.h>
-#include <linux/tty.h>
-#include <linux/sched.h>
+//#include <linux/fs.h>
+//#include <linux/kernel.h>
+//#include <linux/tty.h>
+//#include <linux/sched.h>
 
-#include <asm/segment.h>
-#include <asm/system.h>
+#include "../include/linux/fs.h"
+#include "../include/linux/kernel.h"
+#include "../include/linux/tty.h"
+#include "../include/linux/sched.h"
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <string.h>
-#include <const.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <signal.h>
+
+//#include <asm/segment.h>
+//#include <asm/system.h>
+#include "../include/asm/segment.h"
+#include "../include/asm/system.h"
+
+//#include <sys/stat.h>
+//#include <sys/types.h>
+//#include <string.h>
+//#include <const.h>
+//#include <errno.h>
+//#include <sys/time.h>
+//#include <signal.h>
+#include "../include/const.h"
+#include "../include/signal.h"
+#include "../include/errno.h"
+#include "../include/string.h"
+#include "../include/sys/stat.h"
+#include "../include/sys/types.h"
+#include "../include/sys/time.h"
 
 /*
  * Ok, Peter made a complicated, but straightforward multiple_wait() function.

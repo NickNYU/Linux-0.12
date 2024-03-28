@@ -22,14 +22,21 @@
  * Added swap-device specification: Linux 20.12.91
  */
 
-#include <stdio.h>	/* fprintf */
-#include <string.h>
-#include <stdlib.h>	/* contains exit */
-#include <sys/types.h>	/* unistd.h needs this */
-#include <sys/stat.h>
-#include <linux/fs.h>
-#include <unistd.h>	/* contains read/write */
-#include <fcntl.h>
+//#include <stdio.h>	/* fprintf */
+//#include <string.h>
+//#include <stdlib.h>	/* contains exit */
+//#include <sys/types.h>	/* unistd.h needs this */
+//#include <sys/stat.h>
+//#include <linux/fs.h>
+//#include <unistd.h>	/* contains read/write */
+//#include <fcntl.h>
+#include "../include/stdio.h"
+#include "../include/string.h"
+#include "../include/sys/types.h"
+#include "../include/sys/stat.h"
+#include "../include/linux/fs.h"
+#include "../include/unistd.h"
+#include "../include/fcntl.h"
 
 #define MINIX_HEADER 32
 #define GCC_HEADER 1024

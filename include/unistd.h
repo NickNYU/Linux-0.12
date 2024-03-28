@@ -50,12 +50,19 @@
 #define _PC_VDISABLE		8
 #define _PC_CHOWN_RESTRICTED	9
 
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/times.h>
-#include <sys/utsname.h>
-#include <sys/resource.h>
-#include <utime.h>
+//#include <sys/stat.h>
+//#include <sys/time.h>
+//#include <sys/times.h>
+//#include <sys/utsname.h>
+//#include <sys/resource.h>
+//#include <utime.h>
+
+#include "./sys/stat.h"
+#include "./sys/time.h"
+#include "./sys/times.h"
+#include "./sys/utsname.h"
+#include "./sys/resource.h"
+#include "./utime.h"
 
 
 #define __NR_setup	0	/* used only by init, to get system going */

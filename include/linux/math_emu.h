@@ -6,7 +6,8 @@
 #ifndef _LINUX_MATH_EMU_H
 #define _LINUX_MATH_EMU_H
 
-#include <linux/sched.h>
+//#include <linux/sched.h>
+#include "sched.h"
 
 struct info {
 	long ___math_ret;

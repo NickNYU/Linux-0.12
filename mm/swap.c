@@ -9,8 +9,8 @@
  * Started 18.12.91
  */
 
-#include <string.h>
-//
+//#include <string.h>
+#include "../include/string.h"
 //#include <linux/mm.h>
 //#include <linux/sched.h>
 //#include <linux/head.h>

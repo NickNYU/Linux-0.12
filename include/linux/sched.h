@@ -37,10 +37,14 @@
 #include "head.h"
 #include "fs.h"
 #include "mm.h"
-#include <sys/param.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <signal.h>
+//#include <sys/param.h>
+//#include <sys/time.h>
+//#include <sys/resource.h>
+//#include <signal.h>
+#include "../include/sys/param.h"
+#include "../include/sys/time.h"
+#include "../include/sys/resource.h"
+#include "signal.h"
 
 #if (NR_OPEN > 32)
 #error "Currently the close-on-exec-flags and select masks are in one long, max 32 files/proc"

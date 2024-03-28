@@ -1,7 +1,8 @@
 #ifndef _FCNTL_H
 #define _FCNTL_H
 
-#include <sys/types.h>
+//#include <sys/types.h>
+#include "./sys/types.h"
 
 /* open/fcntl - NOCTTY, NDELAY isn't implemented yet */
 #define O_ACCMODE	00003
